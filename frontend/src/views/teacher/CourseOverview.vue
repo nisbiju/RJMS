@@ -3,6 +3,15 @@
     <nav class="navbar">
       <div class="container navbar-content">
         <router-link to="/teacher" class="navbar-title">RJMS</router-link>
+        <div class="navbar-menu">
+          <div class="dropdown">
+            <button @click="toggleUserMenu">👤</button>
+            <div v-if="showUserMenu" class="dropdown-menu">
+              <router-link to="/teacher/profile">Profile</router-link>
+              <button @click="logout">Sign Out</button>
+            </div>
+          </div>
+        </div>
       </div>
     </nav>
 
@@ -66,7 +75,8 @@ export default {
   data() {
     return {
       courseId: this.$route.params.id,
-      overview: []
+      overview: [],
+      showUserMenu: false
     }
   },
   methods: {
@@ -76,6 +86,17 @@ export default {
         this.overview = response.data.overview
       } catch (error) {
         console.error('Error loading overview:', error)
+      }
+    },
+    toggleUserMenu() {
+      this.showUserMenu = !this.showUserMenu
+    },
+    async logout() {
+      try {
+        await axios.post('/api/auth/logout')
+        this.$router.push('/login/teacher')
+      } catch (error) {
+        console.error('Logout error:', error)
       }
     }
   },

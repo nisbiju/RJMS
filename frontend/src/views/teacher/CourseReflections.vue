@@ -3,6 +3,15 @@
     <nav class="navbar">
       <div class="container navbar-content">
         <router-link to="/teacher" class="navbar-title">RJMS</router-link>
+        <div class="navbar-menu">
+          <div class="dropdown">
+            <button @click="toggleUserMenu">👤</button>
+            <div v-if="showUserMenu" class="dropdown-menu">
+              <router-link to="/teacher/profile">Profile</router-link>
+              <button @click="logout">Sign Out</button>
+            </div>
+          </div>
+        </div>
       </div>
     </nav>
 
@@ -79,7 +88,8 @@ export default {
       courseId: this.$route.params.id,
       reflections: [],
       currentPage: 1,
-      itemsPerPage: 30  // 10 rows × 3 cards per row
+      itemsPerPage: 30,  // 10 rows × 3 cards per row
+      showUserMenu: false
     }
   },
   computed: {
@@ -112,6 +122,17 @@ export default {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
         window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    },
+    toggleUserMenu() {
+      this.showUserMenu = !this.showUserMenu
+    },
+    async logout() {
+      try {
+        await axios.post('/api/auth/logout')
+        this.$router.push('/login/teacher')
+      } catch (error) {
+        console.error('Logout error:', error)
       }
     }
   },
