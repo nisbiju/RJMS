@@ -7,11 +7,16 @@ bp = Blueprint('courses', __name__, url_prefix='/api/courses')
 
 def generate_reflections_for_course(course):
     """Generate reflection instances based on course configuration"""
+    print(f"\n[DEBUG] generate_reflections_for_course called for course {course.id}")
+    print(f"[DEBUG] Start date: {course.start_date}, End date: {course.end_date}")
+    
     if not course.start_date or not course.end_date:
+        print(f"[DEBUG] Missing dates - Start: {course.start_date}, End: {course.end_date}")
         return
     
     # Delete existing reflections to avoid duplicates
-    Reflection.query.filter_by(course_id=course.id).delete()
+    deleted_count = Reflection.query.filter_by(course_id=course.id).delete()
+    print(f"[DEBUG] Deleted {deleted_count} existing reflections")
     
     # Get reflection structure from course
     structure = course.custom_structure if course.custom_structure else None
@@ -32,6 +37,7 @@ def generate_reflections_for_course(course):
     if course.selected_days:
         selected_day_names = [d.strip() for d in course.selected_days.split(',')]
         selected_weekdays = [day_map[day] for day in selected_day_names if day in day_map]
+        print(f"[DEBUG] Selected days: {course.selected_days} -> weekdays: {selected_weekdays}")
     
     if selected_weekdays is not None:
         # When specific days are selected, iterate day by day
@@ -82,9 +88,13 @@ def generate_reflections_for_course(course):
             current_date += timedelta(days=recurrence)
     
     # Bulk insert reflections
+    print(f"[DEBUG] Total reflections to create: {len(reflections_to_create)}")
     if reflections_to_create:
         db.session.bulk_save_objects(reflections_to_create)
         db.session.commit()
+        print(f"[DEBUG] Successfully created {len(reflections_to_create)} reflections")
+    else:
+        print("[DEBUG] No reflections created")
 
 @bp.route('', methods=['GET'])
 @login_required
