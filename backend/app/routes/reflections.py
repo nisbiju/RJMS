@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from ..models.models import db, Reflection, ReflectionSubmission, Course, Enrollment, User
 from ..utils.auth_utils import login_required, teacher_required, student_required
+from ..services.ai_feedback import generate_reflection_feedback
 from datetime import datetime
 
 bp = Blueprint('reflections', __name__, url_prefix='/api/reflections')
@@ -112,8 +113,22 @@ def submit_reflection():
     
     submission.content = content
     submission.submitted_at = datetime.utcnow()
-    # Mock AI feedback for demo
-    submission.ai_feedback = "Great reflection! Consider elaborating more on your learning outcomes."
+    
+    # Get course details for AI feedback context
+    course = Course.query.get(reflection.course_id)
+    
+    # Generate AI-powered feedback using Gemini
+    try:
+        submission.ai_feedback = generate_reflection_feedback(
+            reflection_content=content,
+            framework=course.framework if course else None,
+            structure=reflection.structure
+        )
+        print(f"[AI] Generated feedback for reflection {reflection_id}")
+    except Exception as e:
+        print(f"[AI] Error generating feedback: {str(e)}")
+        # Fallback to generic feedback if AI fails
+        submission.ai_feedback = "Thank you for your thoughtful reflection. Keep up the great work!"
     
     db.session.commit()
     
