@@ -1,0 +1,5 @@
+[run]
+run = "chmod +x start.sh && ./start.sh"
+
+[nix]
+channel = "stable-24_05"

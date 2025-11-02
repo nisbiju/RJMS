@@ -1,0 +1,157 @@
+<template>
+  <div>
+    <nav class="navbar">
+      <div class="container navbar-content">
+        <router-link to="/teacher" class="navbar-title">RJMS</router-link>
+      </div>
+    </nav>
+
+    <div class="container" style="padding: 40px 20px;">
+      <div style="display: flex; gap: 30px;">
+        <!-- Side Panel -->
+        <div style="width: 200px; flex-shrink: 0;">
+          <div class="card" style="padding: 10px;">
+            <router-link :to="`/teacher/course/${courseId}/overview`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px;">
+              Overview
+            </router-link>
+            <router-link :to="`/teacher/course/${courseId}/configure`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-top: 5px; background-color: var(--popup);">
+              Configure
+            </router-link>
+            <router-link :to="`/teacher/course/${courseId}/students`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-top: 5px;">
+              Manage Students
+            </router-link>
+            <router-link :to="`/teacher/course/${courseId}/reflections`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-top: 5px;">
+              Reflections
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div style="flex: 1; max-width: 800px;">
+          <h1 style="text-align: center; margin-bottom: 40px;">Configuration</h1>
+
+          <div class="card">
+            <div class="form-group">
+              <label>Framework</label>
+              <select v-model="config.framework">
+                <option value="">Select Framework</option>
+                <option value="Bloom's Taxonomy">Bloom's Taxonomy</option>
+                <option value="5 WHYs">5 WHYs</option>
+                <option value="1-H">1-H</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Course Start Date</label>
+              <input v-model="config.start_date" type="date" />
+            </div>
+
+            <div class="form-group">
+              <label>Course End Date</label>
+              <input v-model="config.end_date" type="date" />
+            </div>
+
+            <div class="form-group">
+              <label>Each Reflection Due Date (days post reflection start)</label>
+              <select v-model="config.reflection_due_days">
+                <option value="1">1 day</option>
+                <option value="2">2 days</option>
+                <option value="3">3 days</option>
+                <option value="5">5 days</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Recurrence (per week)</label>
+              <select v-model="config.recurrence_days">
+                <option value="1">1 day</option>
+                <option value="2">2 days</option>
+                <option value="3">3 days</option>
+                <option value="5">5 days</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Select Days</label>
+              <div class="checkbox-group">
+                <label v-for="day in days" :key="day">
+                  <input type="checkbox" :value="day" v-model="config.selected_days" />
+                  {{ day }}
+                </label>
+              </div>
+            </div>
+
+            <button @click="saveConfiguration" class="btn btn-primary" style="margin-top: 20px;">
+              Submit Configuration
+            </button>
+
+            <p v-if="saveMessage" style="margin-top: 15px; color: #4CAF50; font-weight: 500;">
+              {{ saveMessage }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios'
+
+export default {
+  name: 'CourseConfiguration',
+  data() {
+    return {
+      courseId: this.$route.params.id,
+      config: {
+        framework: '',
+        start_date: '',
+        end_date: '',
+        reflection_due_days: '3',
+        recurrence_days: '1',
+        selected_days: []
+      },
+      days: ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'],
+      saveMessage: ''
+    }
+  },
+  methods: {
+    async loadConfiguration() {
+      try {
+        const response = await axios.get(`/api/courses/${this.courseId}`)
+        const course = response.data.course
+        
+        if (course.framework) this.config.framework = course.framework
+        if (course.start_date) this.config.start_date = course.start_date.split('T')[0]
+        if (course.end_date) this.config.end_date = course.end_date.split('T')[0]
+        if (course.reflection_due_days) this.config.reflection_due_days = course.reflection_due_days.toString()
+        if (course.recurrence_days) this.config.recurrence_days = course.recurrence_days.toString()
+        if (course.selected_days) this.config.selected_days = course.selected_days.split(',')
+      } catch (error) {
+        console.error('Error loading configuration:', error)
+      }
+    },
+    async saveConfiguration() {
+      if (!this.config.framework || !this.config.start_date || !this.config.end_date) {
+        alert('Please fill in all required fields')
+        return
+      }
+
+      try {
+        await axios.put(`/api/courses/${this.courseId}/configure`, this.config)
+        this.saveMessage = 'Configuration saved successfully'
+        setTimeout(() => {
+          this.saveMessage = ''
+        }, 3000)
+      } catch (error) {
+        console.error('Error saving configuration:', error)
+        alert('Failed to save configuration')
+      }
+    }
+  },
+  mounted() {
+    this.loadConfiguration()
+  }
+}
+</script>
