@@ -42,9 +42,9 @@
             <button @click="deleteSelected" class="btn btn-secondary" :disabled="selectedStudents.length === 0">
               Delete Selected
             </button>
-            <label class="btn btn-primary" style="cursor: pointer;" title="Upload CSV file with student list">
-              Upload List (CSV)
-              <input type="file" ref="fileInput" @change="handleFileUpload" accept=".csv,text/csv" style="display: none;" />
+            <label class="btn btn-primary" style="cursor: pointer;" title="Upload student list (CSV or Excel)">
+              Upload List
+              <input type="file" ref="fileInput" @change="handleFileUpload" accept=".csv,.xlsx,.xls,text/csv" style="display: none;" />
             </label>
           </div>
 
@@ -91,6 +91,7 @@
 
 <script>
 import axios from 'axios'
+import * as XLSX from 'xlsx'
 
 export default {
   name: 'ManageStudents',
@@ -154,19 +155,41 @@ export default {
       if (!file) return
 
       try {
-        const text = await file.text()
-        const lines = text.split('\n').filter(line => line.trim())
-        
-        // Skip header row
-        const dataLines = lines.slice(1)
-        
-        const students = dataLines.map(line => {
-          const [name, email] = line.split(',').map(val => val.trim())
-          return { name, email }
-        }).filter(s => s.email)  // Only include rows with valid email
+        let students = []
+        const fileName = file.name.toLowerCase()
+
+        if (fileName.endsWith('.csv')) {
+          // Handle CSV files
+          const text = await file.text()
+          const lines = text.split('\n').filter(line => line.trim())
+          
+          // Skip header row
+          const dataLines = lines.slice(1)
+          
+          students = dataLines.map(line => {
+            const [name, email] = line.split(',').map(val => val.trim())
+            return { name, email }
+          }).filter(s => s.email)
+        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+          // Handle Excel files
+          const data = await file.arrayBuffer()
+          const workbook = XLSX.read(data)
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet)
+          
+          students = jsonData.map(row => ({
+            name: row.name || row.Name || '',
+            email: row.email || row.Email || ''
+          })).filter(s => s.email)
+        } else {
+          alert('Unsupported file format. Please upload CSV or Excel (.xlsx, .xls) files.')
+          event.target.value = ''
+          return
+        }
 
         if (students.length === 0) {
-          alert('No valid student data found in file')
+          alert('No valid student data found in file.\n\nMake sure your file has columns named "name" and "email".')
+          event.target.value = ''
           return
         }
 
@@ -182,7 +205,8 @@ export default {
         event.target.value = ''
       } catch (error) {
         console.error('Error uploading file:', error)
-        alert('Failed to upload student list. Please check the file format.\n\nTip: If you have an Excel file, save it as CSV first.')
+        alert('Failed to upload student list. Please check the file format.\n\nMake sure your file has columns named "name" and "email".')
+        event.target.value = ''
       }
     }
   },
