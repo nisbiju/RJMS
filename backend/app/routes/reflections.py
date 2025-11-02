@@ -91,6 +91,13 @@ def submit_reflection():
     reflection_id = data.get('reflection_id')
     content = data.get('content')
     
+    # Get the reflection to check due date
+    reflection = Reflection.query.get_or_404(reflection_id)
+    
+    # Check if due date has passed
+    if reflection.due_date and reflection.due_date < datetime.utcnow():
+        return jsonify({'error': 'Submission deadline has passed'}), 403
+    
     submission = ReflectionSubmission.query.filter_by(
         reflection_id=reflection_id,
         student_id=session['user_id']
@@ -138,6 +145,7 @@ def get_reflection_submissions(reflection_id):
             'student_email': student.email,
             'submitted': submission.submitted_at is not None if submission else False,
             'submission_date': submission.submitted_at.isoformat() if submission and submission.submitted_at else None,
+            'content': submission.content if submission else None,
             'ai_feedback': submission.ai_feedback if submission else None,
             'score': submission.score if submission else None,
             'display_feedback': submission.display_feedback if submission else False,
@@ -149,7 +157,7 @@ def get_reflection_submissions(reflection_id):
 @bp.route('/submission/<int:submission_id>/update', methods=['PUT'])
 @teacher_required
 def update_submission(submission_id):
-    """Update submission score and feedback display"""
+    """Update submission score, feedback display, and AI feedback"""
     submission = ReflectionSubmission.query.get_or_404(submission_id)
     reflection = Reflection.query.get(submission.reflection_id)
     course = Course.query.get(reflection.course_id)
@@ -163,6 +171,8 @@ def update_submission(submission_id):
         submission.score = data['score']
     if 'display_feedback' in data:
         submission.display_feedback = data['display_feedback']
+    if 'ai_feedback' in data:
+        submission.ai_feedback = data['ai_feedback']
     
     db.session.commit()
     

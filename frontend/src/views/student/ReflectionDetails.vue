@@ -43,7 +43,7 @@
                 v-model="responses[index]"
                 rows="6"
                 :placeholder="`Enter your response for: ${field.label}`"
-                :disabled="isSubmitted"
+                :disabled="isReadOnly"
                 style="width: 100%;"
               ></textarea>
             </div>
@@ -56,22 +56,28 @@
               v-model="content"
               rows="15"
               placeholder="Write your reflection here..."
-              :disabled="isSubmitted"
+              :disabled="isReadOnly"
             ></textarea>
           </div>
 
           <button
             @click="submitReflection"
             class="btn btn-primary"
-            :disabled="isSubmitted"
+            :disabled="isReadOnly"
             style="margin-top: 20px;"
           >
-            {{ isSubmitted ? 'Submitted' : 'Submit' }}
+            {{ submitButtonText }}
           </button>
 
           <div v-if="isSubmitted" style="margin-top: 10px;">
             <p style="color: #4CAF50; font-weight: 500;">
               ✓ Submitted on {{ formatDate(submission.submitted_at) }}
+            </p>
+            <p v-if="!isDueDatePassed" style="color: var(--text-light); font-size: 14px; margin-top: 5px;">
+              You can update your submission until {{ formatDate(reflection.due_date) }}
+            </p>
+            <p v-else style="color: var(--text-light); font-size: 14px; margin-top: 5px;">
+              Submission closed (due date passed)
             </p>
           </div>
         </div>
@@ -103,7 +109,26 @@ export default {
   },
   computed: {
     isSubmitted() {
-      return this.submission && this.submission.submitted
+      return this.submission && this.submission.submitted_at
+    },
+    isDueDatePassed() {
+      if (!this.reflection.due_date) return false
+      const dueDate = new Date(this.reflection.due_date)
+      const now = new Date()
+      return now > dueDate
+    },
+    isReadOnly() {
+      // Make read-only if due date has passed, regardless of submission status
+      return this.isDueDatePassed
+    },
+    submitButtonText() {
+      if (this.isDueDatePassed) {
+        return 'Submission Closed (Due Date Passed)'
+      } else if (this.isSubmitted) {
+        return 'Update Submission'
+      } else {
+        return 'Submit'
+      }
     }
   },
   methods: {
@@ -127,8 +152,20 @@ export default {
         // Load existing submission content
         if (this.submission.content) {
           try {
-            // Try to parse as JSON (new format)
-            this.responses = JSON.parse(this.submission.content)
+            // Try to parse as JSON (new structured format)
+            const parsedContent = JSON.parse(this.submission.content)
+            
+            // Check if it's an array of {label, response} objects
+            if (Array.isArray(parsedContent) && parsedContent.length > 0 && parsedContent[0].label) {
+              // Map responses back to the responses object
+              this.responses = {}
+              parsedContent.forEach((item, index) => {
+                this.responses[index] = item.response || ''
+              })
+            } else {
+              // It's some other JSON format, convert to string
+              this.content = JSON.stringify(parsedContent)
+            }
           } catch (e) {
             // Fall back to plain text (old format)
             this.content = this.submission.content

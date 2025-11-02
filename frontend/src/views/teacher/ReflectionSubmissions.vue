@@ -41,11 +41,14 @@
                 <span v-else class="badge" style="background-color: #FFB6C1;">
                   Not Submitted
                 </span>
+                <button v-if="submission.submitted" @click="viewSubmission(submission)" class="btn btn-secondary" style="margin-left: 10px; font-size: 12px; padding: 5px 10px;">
+                  View
+                </button>
               </td>
               <td>
-                <span v-if="submission.ai_feedback" style="max-width: 200px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  {{ submission.ai_feedback }}
-                </span>
+                <button v-if="submission.ai_feedback" @click="editFeedback(submission)" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">
+                  Edit Feedback
+                </button>
                 <span v-else style="color: var(--text-light);">-</span>
               </td>
               <td>
@@ -89,6 +92,54 @@
           Next
         </button>
       </div>
+
+      <!-- Submission View Modal -->
+      <div v-if="viewingSubmission" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="viewingSubmission = null">
+        <div class="card" style="max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; background: var(--container);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>{{ viewingSubmission.student_name }}'s Submission</h2>
+            <button @click="viewingSubmission = null" class="btn btn-secondary">Close</button>
+          </div>
+          
+          <div v-if="viewingSubmission.content">
+            <div v-if="isStructuredContent(viewingSubmission.content)">
+              <div v-for="(item, index) in parseStructuredContent(viewingSubmission.content)" :key="index" style="margin-bottom: 25px;">
+                <h4 style="color: var(--text-dark); margin-bottom: 10px;">{{ item.label }}</h4>
+                <div style="background: var(--popup); padding: 15px; border-radius: 6px; white-space: pre-wrap;">
+                  {{ item.response }}
+                </div>
+              </div>
+            </div>
+            <div v-else style="background: var(--popup); padding: 15px; border-radius: 6px; white-space: pre-wrap;">
+              {{ viewingSubmission.content }}
+            </div>
+          </div>
+
+          <div v-if="viewingSubmission.ai_feedback" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
+            <h3 style="margin-bottom: 10px;">AI Feedback</h3>
+            <div style="background: var(--popup); padding: 15px; border-radius: 6px; white-space: pre-wrap;">
+              {{ viewingSubmission.ai_feedback }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feedback Edit Modal -->
+      <div v-if="editingFeedback" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="editingFeedback = null">
+        <div class="card" style="max-width: 600px; width: 90%; background: var(--container);">
+          <h2 style="margin-bottom: 20px;">Edit AI Feedback</h2>
+          
+          <div class="form-group">
+            <label>Feedback for {{ editingFeedback.student_name }}</label>
+            <textarea v-model="feedbackEditText" rows="10" style="width: 100%;"></textarea>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button @click="saveFeedback" class="btn btn-primary">Save</button>
+            <button @click="editingFeedback = null" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -106,7 +157,10 @@ export default {
       currentPage: 1,
       itemsPerPage: 10,
       selectedSubmissions: [],
-      selectAllChecked: false
+      selectAllChecked: false,
+      viewingSubmission: null,
+      editingFeedback: null,
+      feedbackEditText: ''
     }
   },
   computed: {
@@ -171,6 +225,47 @@ export default {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
         window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    },
+    viewSubmission(submission) {
+      this.viewingSubmission = submission
+    },
+    editFeedback(submission) {
+      this.editingFeedback = submission
+      this.feedbackEditText = submission.ai_feedback || ''
+    },
+    async saveFeedback() {
+      try {
+        await axios.put(`/api/reflections/submission/${this.editingFeedback.submission_id}/update`, {
+          ai_feedback: this.feedbackEditText
+        })
+        
+        // Update local data
+        const sub = this.submissions.find(s => s.submission_id === this.editingFeedback.submission_id)
+        if (sub) {
+          sub.ai_feedback = this.feedbackEditText
+        }
+        
+        this.editingFeedback = null
+        alert('Feedback updated successfully!')
+      } catch (error) {
+        console.error('Error updating feedback:', error)
+        alert('Failed to update feedback')
+      }
+    },
+    isStructuredContent(content) {
+      try {
+        const parsed = JSON.parse(content)
+        return Array.isArray(parsed) && parsed.length > 0 && parsed[0].label
+      } catch {
+        return false
+      }
+    },
+    parseStructuredContent(content) {
+      try {
+        return JSON.parse(content)
+      } catch {
+        return []
       }
     }
   },
