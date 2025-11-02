@@ -32,7 +32,7 @@
 
           <div class="grid">
             <div
-              v-for="reflection in reflections"
+              v-for="reflection in paginatedReflections"
               :key="reflection.id"
               class="card"
               @click="viewReflection(reflection.id)"
@@ -52,6 +52,17 @@
           <div v-if="reflections.length === 0" style="text-align: center; padding: 60px 20px; color: var(--text-light);">
             <p>No reflections configured for this course yet</p>
           </div>
+
+          <!-- Pagination Controls -->
+          <div v-if="totalPages > 1" style="margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+            <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1" class="btn btn-secondary" style="padding: 8px 15px;">
+              Previous
+            </button>
+            <span style="color: var(--text-dark);">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages" class="btn btn-secondary" style="padding: 8px 15px;">
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -66,7 +77,19 @@ export default {
   data() {
     return {
       courseId: this.$route.params.id,
-      reflections: []
+      reflections: [],
+      currentPage: 1,
+      itemsPerPage: 30  // 10 rows × 3 cards per row
+    }
+  },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.reflections.length / this.itemsPerPage)
+    },
+    paginatedReflections() {
+      const start = (this.currentPage - 1) * this.itemsPerPage
+      const end = start + this.itemsPerPage
+      return this.reflections.slice(start, end)
     }
   },
   methods: {
@@ -84,6 +107,12 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return 'Not set'
       return new Date(dateStr).toLocaleDateString()
+    },
+    changePage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     }
   },
   mounted() {

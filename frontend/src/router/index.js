@@ -8,6 +8,7 @@ import StudentDashboard from '../views/student/StudentDashboard.vue'
 import StudentProfile from '../views/student/StudentProfile.vue'
 import ReflectionDetails from '../views/student/ReflectionDetails.vue'
 import TeacherHome from '../views/teacher/TeacherHome.vue'
+import TeacherProfile from '../views/teacher/TeacherProfile.vue'
 import CourseOverview from '../views/teacher/CourseOverview.vue'
 import CourseConfiguration from '../views/teacher/CourseConfiguration.vue'
 import ManageStudents from '../views/teacher/ManageStudents.vue'
@@ -64,6 +65,12 @@ const routes = [
     path: '/teacher',
     name: 'TeacherHome',
     component: TeacherHome,
+    meta: { requiresAuth: true, role: 'teacher' }
+  },
+  {
+    path: '/teacher/profile',
+    name: 'TeacherProfile',
+    component: TeacherProfile,
     meta: { requiresAuth: true, role: 'teacher' }
   },
   {

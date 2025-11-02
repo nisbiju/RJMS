@@ -82,6 +82,31 @@
               </div>
             </div>
 
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
+              <h3 style="margin-bottom: 15px;">Custom Reflection Structure</h3>
+              <p style="color: var(--text-light); font-size: 14px; margin-bottom: 15px;">
+                Add custom fields to structure your reflection journal
+              </p>
+
+              <div v-for="(item, index) in customItems" :key="index" class="card" style="margin-bottom: 15px; padding: 15px;">
+                <div class="form-group">
+                  <label>Field Label</label>
+                  <input v-model="item.label" type="text" placeholder="e.g., What did you learn?" />
+                </div>
+                <div class="form-group">
+                  <label>Field Description (optional)</label>
+                  <textarea v-model="item.description" rows="2" placeholder="Additional instructions for this field"></textarea>
+                </div>
+                <button @click="removeItem(index)" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">
+                  Remove
+                </button>
+              </div>
+
+              <button @click="addCustomItem" class="btn btn-secondary">
+                + Add Item
+              </button>
+            </div>
+
             <button @click="saveConfiguration" class="btn btn-primary" style="margin-top: 20px;">
               Submit Configuration
             </button>
@@ -112,6 +137,7 @@ export default {
         recurrence_days: '1',
         selected_days: []
       },
+      customItems: [],
       days: ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'],
       saveMessage: ''
     }
@@ -128,6 +154,13 @@ export default {
         if (course.reflection_due_days) this.config.reflection_due_days = course.reflection_due_days.toString()
         if (course.recurrence_days) this.config.recurrence_days = course.recurrence_days.toString()
         if (course.selected_days) this.config.selected_days = course.selected_days.split(',')
+        if (course.custom_structure) {
+          try {
+            this.customItems = JSON.parse(course.custom_structure)
+          } catch (e) {
+            this.customItems = []
+          }
+        }
       } catch (error) {
         console.error('Error loading configuration:', error)
       }
@@ -139,7 +172,11 @@ export default {
       }
 
       try {
-        await axios.put(`/api/courses/${this.courseId}/configure`, this.config)
+        const configData = {
+          ...this.config,
+          custom_structure: JSON.stringify(this.customItems)
+        }
+        await axios.put(`/api/courses/${this.courseId}/configure`, configData)
         this.saveMessage = 'Configuration saved successfully'
         setTimeout(() => {
           this.saveMessage = ''
@@ -148,6 +185,15 @@ export default {
         console.error('Error saving configuration:', error)
         alert('Failed to save configuration')
       }
+    },
+    addCustomItem() {
+      this.customItems.push({
+        label: '',
+        description: ''
+      })
+    },
+    removeItem(index) {
+      this.customItems.splice(index, 1)
     }
   },
   mounted() {

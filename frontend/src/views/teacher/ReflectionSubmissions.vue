@@ -10,13 +10,19 @@
       <h1 style="margin-bottom: 30px;">Reflection Submissions</h1>
 
       <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-        <input v-model="searchQuery" type="search" placeholder="Search by student name..." style="max-width: 300px;" />
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input v-model="searchQuery" type="search" placeholder="Search by student name..." style="max-width: 300px;" />
+          <button @click="selectAll" class="btn btn-secondary" style="padding: 8px 15px;">
+            Select All
+          </button>
+        </div>
       </div>
 
       <div class="card" style="overflow-x: auto;">
         <table>
           <thead>
             <tr>
+              <th style="width: 50px;"><input type="checkbox" v-model="selectAllChecked" @change="toggleSelectAll" style="width: auto;" /></th>
               <th>Student</th>
               <th>Submission</th>
               <th>AI Feedback</th>
@@ -25,7 +31,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="submission in filteredSubmissions" :key="submission.student_id">
+            <tr v-for="submission in paginatedSubmissions" :key="submission.student_id">
+              <td><input type="checkbox" v-if="submission.submission_id" v-model="selectedSubmissions" :value="submission.submission_id" style="width: auto;" /></td>
               <td>{{ submission.student_name }}</td>
               <td>
                 <span v-if="submission.submitted" class="badge" style="background-color: #90EE90;">
@@ -71,6 +78,17 @@
           <p>No student records found</p>
         </div>
       </div>
+
+      <!-- Pagination Controls -->
+      <div v-if="totalPages > 1" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+        <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1" class="btn btn-secondary" style="padding: 8px 15px;">
+          Previous
+        </button>
+        <span style="color: var(--text-dark);">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages" class="btn btn-secondary" style="padding: 8px 15px;">
+          Next
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -84,7 +102,11 @@ export default {
     return {
       reflectionId: this.$route.params.id,
       submissions: [],
-      searchQuery: ''
+      searchQuery: '',
+      currentPage: 1,
+      itemsPerPage: 10,
+      selectedSubmissions: [],
+      selectAllChecked: false
     }
   },
   computed: {
@@ -94,6 +116,14 @@ export default {
       return this.submissions.filter(s =>
         s.student_name.toLowerCase().includes(this.searchQuery.toLowerCase())
       )
+    },
+    totalPages() {
+      return Math.ceil(this.filteredSubmissions.length / this.itemsPerPage)
+    },
+    paginatedSubmissions() {
+      const start = (this.currentPage - 1) * this.itemsPerPage
+      const end = start + this.itemsPerPage
+      return this.filteredSubmissions.slice(start, end)
     }
   },
   methods: {
@@ -121,6 +151,26 @@ export default {
         })
       } catch (error) {
         console.error('Error updating feedback display:', error)
+      }
+    },
+    toggleSelectAll() {
+      if (this.selectAllChecked) {
+        // Select all submissions that have submission_id
+        this.selectedSubmissions = this.filteredSubmissions
+          .map(s => s.submission_id)
+          .filter(id => id)
+      } else {
+        this.selectedSubmissions = []
+      }
+    },
+    selectAll() {
+      this.selectAllChecked = true
+      this.toggleSelectAll()
+    },
+    changePage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
   },

@@ -1,6 +1,7 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, send_file
 from ..models.models import db, User, Enrollment, Course
 from ..utils.auth_utils import teacher_required
+import io
 
 bp = Blueprint('students', __name__, url_prefix='/api/students')
 
@@ -130,3 +131,25 @@ def remove_student_from_course(student_id, course_id):
     db.session.commit()
     
     return jsonify({'message': 'Student removed successfully'}), 200
+
+@bp.route('/sample-format', methods=['GET'])
+@teacher_required
+def download_sample_format():
+    """Download sample CSV format for student list upload"""
+    # Create sample CSV content
+    csv_content = """name,email
+John Doe,john.doe@example.com
+Jane Smith,jane.smith@example.com
+Bob Johnson,bob.johnson@example.com"""
+    
+    # Create a BytesIO object to send as file
+    buffer = io.BytesIO()
+    buffer.write(csv_content.encode('utf-8'))
+    buffer.seek(0)
+    
+    return send_file(
+        buffer,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name='student_upload_sample.csv'
+    )

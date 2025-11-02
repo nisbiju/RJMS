@@ -30,13 +30,22 @@
         <div style="flex: 1;">
           <h1 style="margin-bottom: 30px;">Manage Students</h1>
 
-          <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+          <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <a href="/api/students/sample-format" download style="text-decoration: none;">
+              <button class="btn btn-secondary" style="padding: 8px 12px;" title="Download Sample Format">
+                📄
+              </button>
+            </a>
             <button @click="showAddModal = true" class="btn btn-primary">
               + Add Student
             </button>
             <button @click="deleteSelected" class="btn btn-secondary" :disabled="selectedStudents.length === 0">
               Delete Selected
             </button>
+            <label class="btn btn-primary" style="cursor: pointer;" title="Upload CSV file with student list">
+              Upload List (CSV)
+              <input type="file" ref="fileInput" @change="handleFileUpload" accept=".csv,text/csv" style="display: none;" />
+            </label>
           </div>
 
           <div class="grid">
@@ -139,6 +148,42 @@ export default {
     },
     getInitials(name) {
       return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    },
+    async handleFileUpload(event) {
+      const file = event.target.files[0]
+      if (!file) return
+
+      try {
+        const text = await file.text()
+        const lines = text.split('\n').filter(line => line.trim())
+        
+        // Skip header row
+        const dataLines = lines.slice(1)
+        
+        const students = dataLines.map(line => {
+          const [name, email] = line.split(',').map(val => val.trim())
+          return { name, email }
+        }).filter(s => s.email)  // Only include rows with valid email
+
+        if (students.length === 0) {
+          alert('No valid student data found in file')
+          return
+        }
+
+        // Upload to bulk endpoint
+        const response = await axios.post(`/api/students/course/${this.courseId}/bulk`, {
+          students
+        })
+
+        alert(response.data.message || 'Students uploaded successfully')
+        this.loadStudents()
+        
+        // Reset file input
+        event.target.value = ''
+      } catch (error) {
+        console.error('Error uploading file:', error)
+        alert('Failed to upload student list. Please check the file format.\n\nTip: If you have an Excel file, save it as CSV first.')
+      }
     }
   },
   mounted() {

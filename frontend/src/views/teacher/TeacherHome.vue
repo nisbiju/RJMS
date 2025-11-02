@@ -7,6 +7,7 @@
           <div class="dropdown">
             <button @click="toggleUserMenu">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
+              <router-link to="/teacher/profile">Profile</router-link>
               <button @click="logout">Sign Out</button>
             </div>
           </div>
