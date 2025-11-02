@@ -40,33 +40,17 @@ def generate_reflection_feedback(
             reflection_text = reflection_content
         
         # Build context-aware prompt
-        prompt = f"""You are an educational feedback assistant analyzing a student's reflection journal entry. 
-Provide constructive, encouraging, and specific feedback that helps the student deepen their learning.
-
-"""
+        prompt = f"""You are an Educational reflection feedback expert analyzing a student's reflection journal entry. You need to evaluate the feedback based on the configuration framework chosen by the educator."""
         
         if framework:
-            prompt += f"The reflection uses the '{framework}' framework.\n"
+            prompt += f" The framework chosen by the educator is '{framework}'."
         
-        if structure:
-            try:
-                structure_data = json.loads(structure)
-                labels = [item.get('label', '') for item in structure_data if item.get('label')]
-                if labels:
-                    prompt += f"The reflection is organized with these prompts: {', '.join(labels)}\n"
-            except (json.JSONDecodeError, TypeError):
-                pass
-        
-        prompt += f"""
+        prompt += f"""\n\nYou have to provide feedback separately for each question/label of the reflection. Also, provide constructive, encouraging, specific feedback that can help the student improve and deepen their learning.
+
 Student's Reflection:
 {reflection_text}
 
-Please provide:
-1. What the student did well (highlight specific insights or depth of thinking)
-2. Areas for growth (suggest deeper questions or connections they could explore)
-3. Encouragement to continue reflecting
-
-Keep your feedback concise (3-4 sentences), supportive, and actionable."""
+Please provide your feedback addressing each question/label separately, highlighting what the student did well and suggesting areas for improvement and deeper exploration."""
 
         # Call Gemini API
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
