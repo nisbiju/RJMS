@@ -1,9 +1,90 @@
 from flask import Blueprint, request, jsonify, session
-from ..models.models import db, Course, Enrollment, User
+from ..models.models import db, Course, Enrollment, User, Reflection
 from ..utils.auth_utils import login_required, teacher_required
-from datetime import datetime
+from datetime import datetime, timedelta
 
 bp = Blueprint('courses', __name__, url_prefix='/api/courses')
+
+def generate_reflections_for_course(course):
+    """Generate reflection instances based on course configuration"""
+    if not course.start_date or not course.end_date:
+        return
+    
+    # Delete existing reflections to avoid duplicates
+    Reflection.query.filter_by(course_id=course.id).delete()
+    
+    # Get reflection structure from course
+    structure = course.custom_structure if course.custom_structure else None
+    
+    # Generate reflections based on recurrence pattern
+    reflections_to_create = []
+    current_date = course.start_date
+    reflection_number = 1
+    
+    # Map day names to weekday numbers (Monday=0, Sunday=6)
+    day_map = {
+        'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3,
+        'Friday': 4, 'Saturday': 5, 'Sunday': 6
+    }
+    
+    # Parse selected days if provided
+    selected_weekdays = None
+    if course.selected_days:
+        selected_day_names = [d.strip() for d in course.selected_days.split(',')]
+        selected_weekdays = [day_map[day] for day in selected_day_names if day in day_map]
+    
+    if selected_weekdays is not None:
+        # When specific days are selected, iterate day by day
+        while current_date <= course.end_date:
+            # Check if current day is one of the selected weekdays
+            if current_date.weekday() in selected_weekdays:
+                # Calculate due date
+                due_days = course.reflection_due_days if course.reflection_due_days else 7
+                due_date = current_date + timedelta(days=due_days)
+                
+                # Create reflection
+                reflection = Reflection(
+                    course_id=course.id,
+                    name=f"Reflection {reflection_number}",
+                    number=reflection_number,
+                    description=f"Reflection journal entry for week {reflection_number}",
+                    start_date=current_date,
+                    due_date=due_date,
+                    structure=structure
+                )
+                reflections_to_create.append(reflection)
+                reflection_number += 1
+            
+            # Move to next day
+            current_date += timedelta(days=1)
+    else:
+        # When no specific days selected, use recurrence_days
+        while current_date <= course.end_date:
+            # Calculate due date
+            due_days = course.reflection_due_days if course.reflection_due_days else 7
+            due_date = current_date + timedelta(days=due_days)
+            
+            # Create reflection
+            reflection = Reflection(
+                course_id=course.id,
+                name=f"Reflection {reflection_number}",
+                number=reflection_number,
+                description=f"Reflection journal entry for week {reflection_number}",
+                start_date=current_date,
+                due_date=due_date,
+                structure=structure
+            )
+            reflections_to_create.append(reflection)
+            reflection_number += 1
+            
+            # Move to next occurrence based on recurrence_days
+            recurrence = course.recurrence_days if course.recurrence_days else 7
+            current_date += timedelta(days=recurrence)
+    
+    # Bulk insert reflections
+    if reflections_to_create:
+        db.session.bulk_save_objects(reflections_to_create)
+        db.session.commit()
 
 @bp.route('', methods=['GET'])
 @login_required
@@ -128,5 +209,8 @@ def configure_course(course_id):
         course.custom_structure = data['custom_structure']
     
     db.session.commit()
+    
+    # Generate reflections based on the configuration
+    generate_reflections_for_course(course)
     
     return jsonify({'message': 'Configuration saved successfully'}), 200
