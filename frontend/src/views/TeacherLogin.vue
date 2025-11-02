@@ -58,6 +58,8 @@ export default {
           role: 'teacher',
           email: this.email,
           name: this.name
+        }, {
+          withCredentials: true
         })
 
         if (response.data.user) {
