@@ -37,14 +37,24 @@ def add_student_to_course(course_id):
     
     data = request.get_json()
     email = data.get('email')
+    name = data.get('name', '')
     
     if not email:
         return jsonify({'error': 'Email is required'}), 400
     
+    # Check if student exists
     student = User.query.filter_by(email=email, role='student').first()
     
     if not student:
-        return jsonify({'error': 'Student not found'}), 404
+        # Create new student user if they don't exist
+        student = User(
+            email=email,
+            name=name if name else email.split('@')[0],
+            google_id=f'manual_{email}_{course_id}',
+            role='student'
+        )
+        db.session.add(student)
+        db.session.flush()  # Get the student ID before enrolling
     
     # Check if already enrolled
     existing = Enrollment.query.filter_by(student_id=student.id, course_id=course_id).first()
@@ -55,7 +65,14 @@ def add_student_to_course(course_id):
     db.session.add(enrollment)
     db.session.commit()
     
-    return jsonify({'message': 'Student added successfully'}), 201
+    return jsonify({
+        'message': 'Student added successfully',
+        'student': {
+            'id': student.id,
+            'name': student.name,
+            'email': student.email
+        }
+    }), 201
 
 @bp.route('/course/<int:course_id>/bulk', methods=['POST'])
 @teacher_required
