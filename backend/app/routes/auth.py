@@ -38,8 +38,8 @@ def google_auth():
         name = idinfo['name']
         picture = idinfo.get('picture', '')
         
-        # Check if user exists
-        user = User.query.filter_by(google_id=google_id).first()
+        # Check if user exists by email (for demo mode compatibility)
+        user = User.query.filter_by(email=email).first()
         
         if not user:
             # Create new user
@@ -53,7 +53,12 @@ def google_auth():
             db.session.add(user)
             db.session.commit()
         elif user.role != role:
-            return jsonify({'error': f'This account is registered as a {user.role}'}), 403
+            return jsonify({'error': f'This account is registered as a {user.role}. Please use the {user.role} login page.'}), 403
+        else:
+            # Update google_id for existing user (in case it's a demo login)
+            if user.google_id != google_id:
+                user.google_id = google_id
+                db.session.commit()
         
         # Set session
         session['user_id'] = user.id
