@@ -30,7 +30,27 @@
             <strong>Due Date:</strong> {{ formatDate(reflection.due_date) }}
           </p>
 
-          <div class="form-group">
+          <!-- Dynamic Structure Fields -->
+          <div v-if="structureFields.length > 0">
+            <div v-for="(field, index) in structureFields" :key="index" class="form-group">
+              <label style="font-weight: 600; color: var(--text-dark);">
+                {{ field.label }}
+              </label>
+              <p v-if="field.description" style="color: var(--text-light); font-size: 14px; margin-bottom: 10px; margin-top: 5px;">
+                {{ field.description }}
+              </p>
+              <textarea
+                v-model="responses[index]"
+                rows="6"
+                :placeholder="`Enter your response for: ${field.label}`"
+                :disabled="isSubmitted"
+                style="width: 100%;"
+              ></textarea>
+            </div>
+          </div>
+          
+          <!-- Fallback to single textarea if no structure -->
+          <div v-else class="form-group">
             <label>Your Reflection</label>
             <textarea
               v-model="content"
@@ -76,6 +96,8 @@ export default {
       reflection: {},
       submission: {},
       content: '',
+      structureFields: [],
+      responses: {},
       showUserMenu: false
     }
   },
@@ -91,27 +113,85 @@ export default {
         const response = await axios.get(`/api/reflections/${reflectionId}`)
         this.reflection = response.data
         this.submission = response.data.submission || {}
-        this.content = this.submission.content || ''
+        
+        // Parse structure from reflection
+        if (this.reflection.structure) {
+          try {
+            this.structureFields = JSON.parse(this.reflection.structure)
+          } catch (e) {
+            console.error('Error parsing structure:', e)
+            this.structureFields = []
+          }
+        }
+        
+        // Load existing submission content
+        if (this.submission.content) {
+          try {
+            // Try to parse as JSON (new format)
+            this.responses = JSON.parse(this.submission.content)
+          } catch (e) {
+            // Fall back to plain text (old format)
+            this.content = this.submission.content
+          }
+        } else {
+          // Initialize empty responses for each field
+          this.responses = {}
+          this.structureFields.forEach((field, index) => {
+            this.responses[index] = ''
+          })
+        }
       } catch (error) {
         console.error('Error loading reflection:', error)
       }
     },
     async submitReflection() {
-      if (!this.content.trim()) {
-        alert('Please write your reflection before submitting')
-        return
-      }
-
-      try {
-        await axios.post('/api/reflections/submit', {
-          reflection_id: this.reflection.id,
-          content: this.content
+      // Validate based on whether structure exists
+      if (this.structureFields.length > 0) {
+        // Validate that all structured fields have responses
+        const hasEmptyFields = this.structureFields.some((field, index) => {
+          return !this.responses[index] || !this.responses[index].trim()
         })
-        alert('Reflection submitted successfully!')
-        this.loadReflection()
-      } catch (error) {
-        console.error('Error submitting reflection:', error)
-        alert('Failed to submit reflection. Please try again.')
+        
+        if (hasEmptyFields) {
+          alert('Please complete all reflection fields before submitting')
+          return
+        }
+
+        try {
+          // Prepare content as JSON with field labels and responses
+          const contentData = this.structureFields.map((field, index) => ({
+            label: field.label,
+            response: this.responses[index]
+          }))
+          
+          await axios.post('/api/reflections/submit', {
+            reflection_id: this.reflection.id,
+            content: JSON.stringify(contentData)
+          })
+          alert('Reflection submitted successfully!')
+          this.loadReflection()
+        } catch (error) {
+          console.error('Error submitting reflection:', error)
+          alert('Failed to submit reflection. Please try again.')
+        }
+      } else {
+        // Validate single content field
+        if (!this.content.trim()) {
+          alert('Please write your reflection before submitting')
+          return
+        }
+
+        try {
+          await axios.post('/api/reflections/submit', {
+            reflection_id: this.reflection.id,
+            content: this.content
+          })
+          alert('Reflection submitted successfully!')
+          this.loadReflection()
+        } catch (error) {
+          console.error('Error submitting reflection:', error)
+          alert('Failed to submit reflection. Please try again.')
+        }
       }
     },
     formatDate(dateStr) {
