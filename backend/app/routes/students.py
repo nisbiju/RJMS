@@ -98,7 +98,7 @@ def bulk_add_students(course_id):
     
     return jsonify({'message': f'{added} students added successfully'}), 201
 
-@bp.route('/<int:student_id>/course/<int:course_id>', methods='DELETE'])
+@bp.route('/<int:student_id>/course/<int:course_id>', methods=['DELETE'])
 @teacher_required
 def remove_student_from_course(student_id, course_id):
     """Remove a student from a course"""
