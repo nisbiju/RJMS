@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect
 from flask_cors import CORS
 from .models.models import db
 import os
@@ -16,6 +16,11 @@ def create_app():
     # Initialize extensions
     CORS(app, supports_credentials=True)
     db.init_app(app)
+    
+    # Root route - API health check
+    @app.route('/')
+    def index():
+        return {'status': 'ok', 'message': 'RJMS API is running'}
     
     # Register blueprints
     from .routes import auth, courses, students, teacher, reflections

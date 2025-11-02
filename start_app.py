@@ -36,10 +36,13 @@ def main():
     print()
     
     # Start Flask backend
-    print('▶ Starting Flask backend (port 5000)...')
+    print('▶ Starting Flask backend (port 5001)...')
+    backend_env = os.environ.copy()
+    backend_env['PORT'] = '5001'
     backend_process = subprocess.Popen(
         ['python', 'run.py'],
         cwd=os.path.join(os.path.dirname(__file__), 'backend'),
+        env=backend_env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -57,7 +60,7 @@ def main():
     print()
     
     # Start Vue.js frontend
-    print('▶ Starting Vue.js frontend (port 5173)...')
+    print('▶ Starting Vue.js frontend (port 5000)...')
     frontend_process = subprocess.Popen(
         ['npm', '--prefix', 'frontend', 'run', 'dev'],
         cwd=os.path.dirname(__file__),
@@ -73,8 +76,8 @@ def main():
     print('✓ RJMS is running!')
     print('=' * 50)
     print()
-    print('Backend API:  http://localhost:5000')
-    print('Frontend UI:  http://localhost:5173')
+    print('Backend API:  http://localhost:5001')
+    print('Frontend UI:  http://localhost:5000')
     print()
     print('Open the Webview tab to access the application')
     print()
