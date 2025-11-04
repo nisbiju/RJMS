@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from ..models.models import db, Course, Enrollment, User, Reflection
+from ..models.models import db, Course, Enrollment, User, Reflection, ReflectionSubmission
 from ..utils.auth_utils import login_required, teacher_required
 from datetime import datetime, timedelta
 
@@ -14,7 +14,27 @@ def generate_reflections_for_course(course):
         print(f"[DEBUG] Missing dates - Start: {course.start_date}, End: {course.end_date}")
         return
     
-    # Delete existing reflections to avoid duplicates
+    # Check if any reflections in this course have submissions
+    existing_reflections = Reflection.query.filter_by(course_id=course.id).all()
+    has_submissions = False
+    
+    for reflection in existing_reflections:
+        submission_count = ReflectionSubmission.query.filter_by(reflection_id=reflection.id).count()
+        if submission_count > 0:
+            has_submissions = True
+            break
+    
+    if has_submissions:
+        print(f"[DEBUG] Course has existing submissions - skipping reflection regeneration")
+        print(f"[DEBUG] Updating structure for existing reflections instead")
+        # Update structure for existing reflections
+        structure = course.custom_structure if course.custom_structure else None
+        for reflection in existing_reflections:
+            reflection.structure = structure
+        db.session.commit()
+        return
+    
+    # Delete existing reflections to avoid duplicates (only if no submissions)
     deleted_count = Reflection.query.filter_by(course_id=course.id).delete()
     print(f"[DEBUG] Deleted {deleted_count} existing reflections")
     
