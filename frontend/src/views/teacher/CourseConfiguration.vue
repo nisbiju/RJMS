@@ -243,11 +243,37 @@ export default {
           }
         }
         
+        // Load existing reflection dates into preview
+        if (course.existing_reflection_dates && course.existing_reflection_dates.length > 0) {
+          this.loadExistingReflectionsIntoPreview(course.existing_reflection_dates)
+        }
+        
         this.isLoadingConfig = false
       } catch (error) {
         console.error('Error loading configuration:', error)
         this.isLoadingConfig = false
       }
+    },
+    loadExistingReflectionsIntoPreview(existingDates) {
+      const dayNames = {
+        0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 
+        4: 'Thursday', 5: 'Friday', 6: 'Saturday'
+      }
+      
+      this.previewDates = existingDates.map(dateStr => {
+        if (!dateStr) return null
+        const date = new Date(dateStr)
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        const weekday = dayNames[date.getDay()]
+        const displayText = `${day}-${month}-${year} [${weekday}]`
+        const normalizedDateStr = date.toISOString().split('T')[0]
+        return { dateStr: normalizedDateStr, displayText }
+      }).filter(d => d !== null)
+      
+      // All existing reflections are selected by default (no deselections)
+      this.deselectedDates = []
     },
     populatePredefinedStructure(framework) {
       if (framework === "Bloom's Taxonomy") {
@@ -283,9 +309,15 @@ export default {
       }
 
       try {
+        // Get the selected dates (those not deselected)
+        const selectedReflectionDates = this.previewDates
+          .filter(date => !this.deselectedDates.includes(date.dateStr))
+          .map(date => date.dateStr)
+        
         const configData = {
           ...this.config,
-          custom_structure: JSON.stringify(this.customItems)
+          custom_structure: JSON.stringify(this.customItems),
+          selected_reflection_dates: selectedReflectionDates
         }
         await axios.put(`/api/courses/${this.courseId}/configure`, configData)
         this.saveMessage = 'Configuration saved successfully'

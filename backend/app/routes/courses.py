@@ -175,6 +175,10 @@ def get_course(course_id):
         if not enrollment:
             return jsonify({'error': 'Not enrolled in this course'}), 403
     
+    # Get existing reflections for this course
+    reflections = Reflection.query.filter_by(course_id=course_id).order_by(Reflection.start_date).all()
+    existing_reflection_dates = [r.start_date.isoformat() if r.start_date else None for r in reflections]
+    
     return jsonify({
         'course': {
             'id': course.id,
@@ -188,7 +192,8 @@ def get_course(course_id):
             'reflection_due_days': course.reflection_due_days,
             'recurrence_days': course.recurrence_days,
             'selected_days': course.selected_days,
-            'custom_structure': course.custom_structure
+            'custom_structure': course.custom_structure,
+            'existing_reflection_dates': existing_reflection_dates
         }
     }), 200
 
@@ -246,7 +251,89 @@ def configure_course(course_id):
     
     db.session.commit()
     
-    # Generate reflections based on the configuration
-    generate_reflections_for_course(course)
+    # Handle reflection dates
+    if 'selected_reflection_dates' in data and data['selected_reflection_dates']:
+        # User has explicitly selected which dates to keep
+        manage_reflections_by_dates(course, data['selected_reflection_dates'])
+    else:
+        # Generate reflections based on the configuration (legacy behavior)
+        generate_reflections_for_course(course)
     
     return jsonify({'message': 'Configuration saved successfully'}), 200
+
+def manage_reflections_by_dates(course, selected_dates):
+    """Manage reflections based on explicitly selected dates"""
+    print(f"\n[DEBUG] manage_reflections_by_dates called for course {course.id}")
+    print(f"[DEBUG] Selected dates: {selected_dates}")
+    
+    # Convert selected dates to datetime objects
+    selected_date_objs = []
+    for date_str in selected_dates:
+        try:
+            # Parse ISO date string and convert to datetime at midnight
+            parsed = datetime.fromisoformat(date_str.replace('Z', ''))
+            # If it's already a date object, convert to datetime
+            if isinstance(parsed, datetime):
+                date_obj = parsed
+            else:
+                # It's a date object, convert to datetime
+                from datetime import date as date_class
+                date_obj = datetime.combine(parsed, datetime.min.time())
+            selected_date_objs.append(date_obj)
+        except Exception as e:
+            print(f"[DEBUG] Failed to parse date: {date_str}, error: {e}")
+            continue
+    
+    # Get existing reflections
+    existing_reflections = Reflection.query.filter_by(course_id=course.id).all()
+    existing_reflection_map = {r.start_date.date() if r.start_date else None: r for r in existing_reflections}
+    
+    # Get reflection structure
+    structure = course.custom_structure if course.custom_structure else None
+    
+    # Track which dates we've processed
+    processed_dates = set()
+    
+    # Update or create reflections for selected dates
+    reflection_number = 1
+    for date_obj in sorted(selected_date_objs):
+        date_only = date_obj.date()
+        processed_dates.add(date_only)
+        
+        if date_only in existing_reflection_map:
+            # Update existing reflection
+            reflection = existing_reflection_map[date_only]
+            reflection.structure = structure
+            print(f"[DEBUG] Updated existing reflection for {date_only}")
+        else:
+            # Create new reflection
+            due_days = course.reflection_due_days if course.reflection_due_days else 7
+            due_date = date_obj + timedelta(days=due_days)
+            
+            reflection = Reflection(
+                course_id=course.id,
+                name=f"Reflection {date_obj.strftime('%d/%m')}",
+                number=reflection_number,
+                description="",
+                start_date=date_obj,
+                due_date=due_date,
+                structure=structure
+            )
+            db.session.add(reflection)
+            print(f"[DEBUG] Created new reflection for {date_only}")
+        
+        reflection_number += 1
+    
+    # Delete reflections not in selected dates (only if they have no submissions)
+    for date_only, reflection in existing_reflection_map.items():
+        if date_only not in processed_dates:
+            # Check if this reflection has submissions
+            submission_count = ReflectionSubmission.query.filter_by(reflection_id=reflection.id).count()
+            if submission_count == 0:
+                db.session.delete(reflection)
+                print(f"[DEBUG] Deleted reflection for {date_only} (no submissions)")
+            else:
+                print(f"[DEBUG] Kept reflection for {date_only} (has {submission_count} submissions)")
+    
+    db.session.commit()
+    print(f"[DEBUG] Reflection management complete")
