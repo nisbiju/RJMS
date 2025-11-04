@@ -3,6 +3,16 @@
     <nav class="navbar">
       <div class="container navbar-content">
         <router-link to="/" class="navbar-title">RJMS</router-link>
+        <div class="navbar-menu">
+          <div class="dropdown">
+            <button @click="toggleMenu" class="user-icon">☰</button>
+            <div v-if="showMenu" class="dropdown-menu">
+              <router-link to="/login/teacher">Teacher Login</router-link>
+              <router-link to="/login/student">Student Login</router-link>
+              <router-link to="/">Home</router-link>
+            </div>
+          </div>
+        </div>
       </div>
     </nav>
 
@@ -42,10 +52,14 @@ export default {
   data() {
     return {
       email: '',
-      name: ''
+      name: '',
+      showMenu: false
     }
   },
   methods: {
+    toggleMenu() {
+      this.showMenu = !this.showMenu
+    },
     async handleLogin() {
       if (!this.email || !this.name) {
         alert('Please enter your email and name')

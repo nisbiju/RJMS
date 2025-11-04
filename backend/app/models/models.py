@@ -11,7 +11,12 @@ class User(db.Model):
     name = db.Column(db.String(255), nullable=False)
     google_id = db.Column(db.String(255), unique=True, nullable=False)
     role = db.Column(db.String(50), nullable=False)  # 'student' or 'teacher'
-    profile_image = db.Column(db.String(500))
+    profile_image = db.Column(db.Text)  # Base64 encoded image
+    department = db.Column(db.String(255))
+    experience = db.Column(db.String(255))  # For teachers
+    area_of_interest = db.Column(db.String(255))
+    student_id = db.Column(db.String(100))  # For students
+    year_of_joining = db.Column(db.String(50))  # For students
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships

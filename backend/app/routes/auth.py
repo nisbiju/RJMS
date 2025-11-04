@@ -101,6 +101,83 @@ def get_current_user():
             'email': user.email,
             'name': user.name,
             'role': user.role,
-            'profile_image': user.profile_image
+            'profile_image': user.profile_image,
+            'department': user.department,
+            'experience': user.experience,
+            'area_of_interest': user.area_of_interest,
+            'student_id': user.student_id,
+            'year_of_joining': user.year_of_joining
+        }
+    }), 200
+
+@bp.route('/profile', methods=['PUT'])
+def update_profile():
+    """Update user profile"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.get_json()
+    
+    # Update allowed fields
+    if 'name' in data:
+        user.name = data['name']
+    if 'department' in data:
+        user.department = data['department']
+    if 'area_of_interest' in data:
+        user.area_of_interest = data['area_of_interest']
+    
+    # Teacher-specific fields
+    if user.role == 'teacher' and 'experience' in data:
+        user.experience = data['experience']
+    
+    # Student-specific fields
+    if user.role == 'student':
+        if 'student_id' in data:
+            user.student_id = data['student_id']
+        if 'year_of_joining' in data:
+            user.year_of_joining = data['year_of_joining']
+    
+    # Profile image (base64) - validate size
+    if 'profile_image' in data:
+        image_data = data['profile_image']
+        if image_data:
+            # Check if it's a valid base64 data URL
+            if not image_data.startswith('data:image/'):
+                return jsonify({'error': 'Invalid image format'}), 400
+            
+            # Estimate base64 size (approximately 4/3 of original)
+            # Limit to ~2.7MB base64 (2MB original)
+            if len(image_data) > 2.7 * 1024 * 1024:
+                return jsonify({'error': 'Image too large. Maximum size is 2MB'}), 400
+            
+            user.profile_image = image_data
+        else:
+            # Allow null to remove image
+            user.profile_image = None
+    
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error updating profile: {str(e)}')
+        return jsonify({'error': 'Failed to update profile'}), 500
+    
+    return jsonify({
+        'message': 'Profile updated successfully',
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'name': user.name,
+            'role': user.role,
+            'profile_image': user.profile_image,
+            'department': user.department,
+            'experience': user.experience,
+            'area_of_interest': user.area_of_interest,
+            'student_id': user.student_id,
+            'year_of_joining': user.year_of_joining
         }
     }), 200

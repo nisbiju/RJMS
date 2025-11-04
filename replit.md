@@ -2,7 +2,7 @@
 
 ## Overview
 
-RJMS is an educational web application that enables structured reflection journaling for students and teachers. The system supports multiple reflection frameworks (Bloom's Taxonomy, 5 WHYs, 1-H), manages course enrollments, handles reflection submissions, and provides AI-generated feedback mechanisms. Teachers can create courses with configurable reflection schedules, while students submit reflections and receive feedback.
+RJMS is an educational web application that enables structured reflection journaling for students and teachers. The system supports multiple reflection frameworks (Bloom's Taxonomy, 5 WHYs, 1-H, Other/Custom), manages course enrollments, handles reflection submissions, and provides AI-generated feedback mechanisms. Teachers can create courses with configurable reflection schedules with preview functionality, while students submit reflections and receive feedback. Both teachers and students can maintain detailed profiles with image uploads.
 
 ## User Preferences
 
@@ -22,7 +22,10 @@ Preferred communication style: Simple, everyday language.
 - **Component-Based Architecture**: The application uses Vue's component system to organize UI into reusable pieces separated by user role (student/teacher views)
 - **Route-Based Code Splitting**: Router configuration splits views into student and teacher sections with role-based access control using route meta fields
 - **Proxy Configuration**: Vite dev server proxies `/api` requests to the Flask backend (port 5001), enabling seamless local development without CORS issues
-- **Custom CSS Variables**: Uses a custom color palette defined in CSS variables for consistent theming across the application
+- **Custom CSS Variables**: Uses a custom color palette (bg-FFF7ED, containers-FBEAD3, popup-F9DDBB, filter-C4B49E) for consistent theming
+- **Framework Pre-population**: Course configuration automatically populates reflection structures based on selected framework (Bloom's Taxonomy, 5 WHYs, 1-H)
+- **Reflection Preview**: Teachers can preview and deselect specific reflection dates before creating reflections
+- **Profile Management**: Comprehensive profile pages for teachers and students with circular image upload, Remove/Update options, and role-specific fields
 
 **Port Configuration:**
 - Frontend runs on port 5173 (Vite default)
@@ -44,7 +47,8 @@ Preferred communication style: Simple, everyday language.
 - **Demo Mode Support**: Google OAuth integration includes demo/development mode bypassing actual token verification for easier testing
 
 **API Structure:**
-- `/api/auth/*` - Authentication endpoints
+- `/api/auth/*` - Authentication endpoints (login, logout, profile management)
+  - `PUT /api/auth/profile` - Update user profile with validation for image size/format
 - `/api/courses/*` - Course management
 - `/api/students/*` - Student enrollment operations
 - `/api/teacher/*` - Teacher-specific analytics and overview
@@ -57,9 +61,11 @@ Preferred communication style: Simple, everyday language.
 
 **Core Entities:**
 
-1. **Users** - Stores both students and teachers with role differentiation
-   - Fields: id, email, name, google_id, role, profile_image, created_at
+1. **Users** - Stores both students and teachers with role differentiation and profile information
+   - Fields: id, email, name, google_id, role, profile_image (TEXT/base64), department, experience, area_of_interest, student_id, year_of_joining, created_at
    - Role can be 'student' or 'teacher'
+   - Profile images stored as base64-encoded data URLs with 2MB size limit
+   - Role-specific fields: experience (teachers), student_id and year_of_joining (students)
 
 2. **Courses** - Teacher-created courses with reflection configuration
    - Fields: id, name, course_code, teacher_id, status, framework, start_date, end_date, reflection_due_days, recurrence_days, selected_days, custom_structure

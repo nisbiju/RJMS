@@ -116,6 +116,29 @@
               </button>
             </div>
 
+            <!-- Reflection Date Preview -->
+            <div v-if="canPreviewDates" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
+              <h3 style="margin-bottom: 15px;">Preview Reflection Dates</h3>
+              <p style="color: var(--text-light); font-size: 14px; margin-bottom: 15px;">
+                Review the scheduled reflection dates. Uncheck any dates you want to exclude.
+              </p>
+              
+              <button @click="generatePreviewDates" class="btn btn-secondary" style="margin-bottom: 15px;">
+                Generate Preview
+              </button>
+
+              <div v-if="previewDates.length > 0" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 15px;">
+                <div v-for="(date, index) in previewDates" :key="index" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" :checked="!deselectedDates.includes(date.dateStr)" @change="toggleDateSelection(date.dateStr)" />
+                  <span>{{ date.displayText }}</span>
+                </div>
+              </div>
+              
+              <p v-if="previewDates.length > 0" style="margin-top: 10px; font-size: 14px; color: var(--text-light);">
+                {{ selectedDatesCount }} reflection(s) will be created
+              </p>
+            </div>
+
             <button @click="saveConfiguration" class="btn btn-primary" style="margin-top: 20px;">
               Submit Configuration
             </button>
@@ -149,12 +172,32 @@ export default {
       customItems: [],
       days: ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'],
       saveMessage: '',
-      showUserMenu: false
+      showUserMenu: false,
+      isLoadingConfig: false,
+      previewDates: [],
+      deselectedDates: []
+    }
+  },
+  computed: {
+    canPreviewDates() {
+      return this.config.start_date && this.config.end_date && this.config.selected_days.length > 0
+    },
+    selectedDatesCount() {
+      return this.previewDates.length - this.deselectedDates.length
+    }
+  },
+  watch: {
+    'config.framework'(newFramework, oldFramework) {
+      // Only auto-populate if framework changed and not during initial load
+      if (!this.isLoadingConfig && newFramework !== oldFramework) {
+        this.populatePredefinedStructure(newFramework)
+      }
     }
   },
   methods: {
     async loadConfiguration() {
       try {
+        this.isLoadingConfig = true
         const response = await axios.get(`/api/courses/${this.courseId}`)
         const course = response.data.course
         
@@ -171,8 +214,37 @@ export default {
             this.customItems = []
           }
         }
+        this.isLoadingConfig = false
       } catch (error) {
         console.error('Error loading configuration:', error)
+        this.isLoadingConfig = false
+      }
+    },
+    populatePredefinedStructure(framework) {
+      if (framework === "Bloom's Taxonomy") {
+        this.customItems = [
+          { label: 'Remember', description: '' },
+          { label: 'Understand', description: '' },
+          { label: 'Apply', description: '' },
+          { label: 'Analyze', description: '' },
+          { label: 'Evaluate', description: '' },
+          { label: 'Create', description: '' }
+        ]
+      } else if (framework === '5 WHYs') {
+        this.customItems = [
+          { label: 'Why', description: '' },
+          { label: 'Why', description: '' },
+          { label: 'Why', description: '' },
+          { label: 'Why', description: '' },
+          { label: 'Why', description: '' }
+        ]
+      } else if (framework === '1-H') {
+        this.customItems = [
+          { label: 'How', description: '' }
+        ]
+      } else if (framework === 'Other') {
+        // Clear for custom structure
+        this.customItems = []
       }
     },
     async saveConfiguration() {
@@ -214,6 +286,44 @@ export default {
         this.$router.push('/login/teacher')
       } catch (error) {
         console.error('Logout error:', error)
+      }
+    },
+    generatePreviewDates() {
+      if (!this.config.start_date || !this.config.end_date || this.config.selected_days.length === 0) {
+        alert('Please fill in course dates and select days first')
+        return
+      }
+
+      const dayMap = {
+        'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thurs': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0
+      }
+      
+      const selectedDayNumbers = this.config.selected_days.map(d => dayMap[d])
+      const startDate = new Date(this.config.start_date)
+      const endDate = new Date(this.config.end_date)
+      const dates = []
+      
+      let currentDate = new Date(startDate)
+      
+      while (currentDate <= endDate) {
+        if (selectedDayNumbers.includes(currentDate.getDay())) {
+          const dateStr = currentDate.toISOString().split('T')[0]
+          const dayName = Object.keys(dayMap).find(key => dayMap[key] === currentDate.getDay())
+          const displayText = `${dateStr} (${dayName})`
+          dates.push({ dateStr, displayText })
+        }
+        currentDate.setDate(currentDate.getDate() + 1)
+      }
+      
+      this.previewDates = dates
+      this.deselectedDates = []
+    },
+    toggleDateSelection(dateStr) {
+      const index = this.deselectedDates.indexOf(dateStr)
+      if (index > -1) {
+        this.deselectedDates.splice(index, 1)
+      } else {
+        this.deselectedDates.push(dateStr)
       }
     }
   },

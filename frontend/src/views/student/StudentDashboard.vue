@@ -28,7 +28,7 @@
         </select>
       </div>
 
-      <h2 style="margin-bottom: 20px;">Due & Overdue Reflections</h2>
+      <h2 style="margin-bottom: 20px;">Reflections Due</h2>
 
       <div class="card" style="padding: 0; overflow: hidden;">
         <div

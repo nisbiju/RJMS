@@ -40,21 +40,21 @@
           <h1 style="margin-bottom: 30px;">Manage Students</h1>
 
           <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-            <a href="/api/students/sample-format" download style="text-decoration: none;">
-              <button class="btn btn-secondary" style="padding: 8px 12px;" title="Download Sample Format">
-                📄
-              </button>
-            </a>
             <button @click="showAddModal = true" class="btn btn-primary">
-              + Add Student
+              Add Student
             </button>
             <button @click="deleteSelected" class="btn btn-secondary" :disabled="selectedStudents.length === 0">
-              Delete Selected
+              Delete Student
             </button>
             <label class="btn btn-primary" style="cursor: pointer;" title="Upload student list (CSV or Excel)">
-              Upload List
+              Upload Student List
               <input type="file" ref="fileInput" @change="handleFileUpload" accept=".csv,.xlsx,.xls,text/csv" style="display: none;" />
             </label>
+            <a href="/api/students/sample-format" download style="text-decoration: none;">
+              <button class="btn btn-secondary" style="padding: 8px 12px;" title="Download Sample Format">
+                📄 Sample
+              </button>
+            </a>
           </div>
 
           <div class="grid">
