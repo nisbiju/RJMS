@@ -164,6 +164,12 @@ export default {
   margin-bottom: 40px;
 }
 
+.login-content > div {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
 .g_id_signin {
   margin: 0 auto;
 }
