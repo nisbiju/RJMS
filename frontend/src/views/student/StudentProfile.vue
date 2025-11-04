@@ -7,10 +7,10 @@
           <router-link to="/student/dashboard">Dashboard</router-link>
           
           <div class="dropdown">
-            <button @click="toggleUserMenu">👤</button>
+            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/student/profile">Profile</router-link>
-              <button @click="logout">Sign Out</button>
+              <button @click="logout" class="btn">Sign Out</button>
             </div>
           </div>
         </div>
@@ -71,12 +71,9 @@
             <input v-model="form.area_of_interest" type="text" placeholder="Enter your area of interest" />
           </div>
 
-          <div style="display: flex; gap: 10px; margin-top: 30px;">
+          <div style="display: flex; justify-content: center; margin-top: 30px;">
             <button @click="saveProfile" class="btn btn-primary">
-              Save Changes
-            </button>
-            <button @click="$router.push('/student')" class="btn btn-secondary">
-              Cancel
+              Save
             </button>
           </div>
 

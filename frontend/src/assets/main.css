@@ -38,17 +38,21 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--popup);
-  color: var(--text-dark);
+  background-color: #000000;
+  color: #FFFFFF;
 }
 
 .btn-primary:hover {
-  background-color: var(--filter);
+  background-color: #333333;
 }
 
 .btn-secondary {
-  background-color: var(--container);
-  color: var(--text-dark);
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.btn-secondary:hover {
+  background-color: #333333;
 }
 
 .card {
@@ -107,7 +111,7 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
 }
 
-.navbar-menu a, .navbar-menu button {
+.navbar-menu a {
   text-decoration: none;
   color: var(--text-dark);
   font-weight: 500;
@@ -119,8 +123,13 @@ input:focus, textarea:focus, select:focus {
   transition: background-color 0.2s;
 }
 
-.navbar-menu a:hover, .navbar-menu button:hover {
+.navbar-menu a:hover {
   background-color: var(--popup);
+}
+
+/* Navbar buttons with .btn class should use global button styles */
+.navbar-menu .btn {
+  /* Inherit from .btn, .btn-primary, .btn-secondary */
 }
 
 .dropdown {
@@ -144,7 +153,7 @@ input:focus, textarea:focus, select:focus {
   padding: 10px 15px;
   text-decoration: none;
   color: var(--text-dark);
-  background: none;
+  background: transparent;
   border: none;
   width: 100%;
   text-align: left;
@@ -152,6 +161,20 @@ input:focus, textarea:focus, select:focus {
 }
 
 .dropdown-menu a:hover, .dropdown-menu button:hover {
+  background-color: var(--filter);
+}
+
+/* Dropdown buttons should not use black background */
+.dropdown-menu .btn {
+  background: transparent;
+  color: var(--text-dark);
+  text-align: left;
+  padding: 10px 15px;
+  width: 100%;
+  border-radius: 0;
+}
+
+.dropdown-menu .btn:hover {
   background-color: var(--filter);
 }
 

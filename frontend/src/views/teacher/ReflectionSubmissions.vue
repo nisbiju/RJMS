@@ -5,10 +5,10 @@
         <router-link to="/teacher" class="navbar-title">RJMS</router-link>
         <div class="navbar-menu">
           <div class="dropdown">
-            <button @click="toggleUserMenu">👤</button>
+            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/teacher/profile">Profile</router-link>
-              <button @click="logout">Sign Out</button>
+              <button @click="logout" class="btn">Sign Out</button>
             </div>
           </div>
         </div>
@@ -16,9 +16,30 @@
     </nav>
 
     <div class="container" style="padding: 40px 20px;">
-      <h1 style="margin-bottom: 30px;">Reflection Submissions</h1>
+      <div style="display: flex; gap: 30px;">
+        <!-- Side Panel -->
+        <div v-if="courseId" style="width: 200px; flex-shrink: 0;">
+          <div class="card" style="padding: 10px;">
+            <router-link :to="`/teacher/course/${courseId}/overview`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px;">
+              Overview
+            </router-link>
+            <router-link :to="`/teacher/course/${courseId}/configure`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-top: 5px;">
+              Configure
+            </router-link>
+            <router-link :to="`/teacher/course/${courseId}/students`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-top: 5px;">
+              Manage Students
+            </router-link>
+            <router-link :to="`/teacher/course/${courseId}/reflections`" style="display: block; padding: 10px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-top: 5px;">
+              Reflections
+            </router-link>
+          </div>
+        </div>
 
-      <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <!-- Main Content -->
+        <div style="flex: 1;">
+          <h1 style="margin-bottom: 30px;">Reflection Submissions</h1>
+
+          <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; gap: 10px; align-items: center;">
           <input v-model="searchQuery" type="search" placeholder="Search by student name..." style="max-width: 300px;" />
           <button @click="selectAll" class="btn btn-secondary" style="padding: 8px 15px;">
@@ -149,6 +170,8 @@
           </div>
         </div>
       </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -161,6 +184,7 @@ export default {
   data() {
     return {
       reflectionId: this.$route.params.id,
+      courseId: null,
       submissions: [],
       searchQuery: '',
       currentPage: 1,
@@ -195,6 +219,10 @@ export default {
       try {
         const response = await axios.get(`/api/reflections/${this.reflectionId}/submissions`)
         this.submissions = response.data.submissions
+        
+        // Get courseId from reflection data
+        const reflectionResponse = await axios.get(`/api/reflections/${this.reflectionId}`)
+        this.courseId = reflectionResponse.data.reflection.course_id
       } catch (error) {
         console.error('Error loading submissions:', error)
       }

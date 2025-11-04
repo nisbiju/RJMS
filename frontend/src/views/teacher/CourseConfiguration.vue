@@ -5,10 +5,10 @@
         <router-link to="/teacher" class="navbar-title">RJMS</router-link>
         <div class="navbar-menu">
           <div class="dropdown">
-            <button @click="toggleUserMenu">👤</button>
+            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/teacher/profile">Profile</router-link>
-              <button @click="logout">Sign Out</button>
+              <button @click="logout" class="btn">Sign Out</button>
             </div>
           </div>
         </div>
@@ -91,6 +91,31 @@
               </div>
             </div>
 
+            <!-- Reflection Date Preview - Moved Above -->
+            <div v-if="canPreviewDates" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
+              <h3 style="margin-bottom: 10px;">Preview Reflection Dates</h3>
+              <p style="color: var(--text-light); font-size: 13px; margin-bottom: 15px;">
+                Click "Generate Preview" to see scheduled dates. Uncheck to exclude.
+              </p>
+              
+              <button @click="generatePreviewDates" class="btn btn-secondary" style="margin-bottom: 15px;">
+                Generate Preview
+              </button>
+
+              <div v-if="previewDates.length > 0" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 10px; background-color: var(--container);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+                  <label v-for="(date, index) in previewDates" :key="index" style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                    <input type="checkbox" :checked="!deselectedDates.includes(date.dateStr)" @change="toggleDateSelection(date.dateStr)" />
+                    <span>{{ date.dateStr }}</span>
+                  </label>
+                </div>
+              </div>
+              
+              <p v-if="previewDates.length > 0" style="margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--text-dark);">
+                {{ selectedDatesCount }} reflection(s) selected
+              </p>
+            </div>
+
             <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
               <h3 style="margin-bottom: 15px;">Custom Reflection Structure</h3>
               <p style="color: var(--text-light); font-size: 14px; margin-bottom: 15px;">
@@ -114,29 +139,6 @@
               <button @click="addCustomItem" class="btn btn-secondary">
                 + Add Item
               </button>
-            </div>
-
-            <!-- Reflection Date Preview -->
-            <div v-if="canPreviewDates" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
-              <h3 style="margin-bottom: 15px;">Preview Reflection Dates</h3>
-              <p style="color: var(--text-light); font-size: 14px; margin-bottom: 15px;">
-                Review the scheduled reflection dates. Uncheck any dates you want to exclude.
-              </p>
-              
-              <button @click="generatePreviewDates" class="btn btn-secondary" style="margin-bottom: 15px;">
-                Generate Preview
-              </button>
-
-              <div v-if="previewDates.length > 0" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 15px;">
-                <div v-for="(date, index) in previewDates" :key="index" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                  <input type="checkbox" :checked="!deselectedDates.includes(date.dateStr)" @change="toggleDateSelection(date.dateStr)" />
-                  <span>{{ date.displayText }}</span>
-                </div>
-              </div>
-              
-              <p v-if="previewDates.length > 0" style="margin-top: 10px; font-size: 14px; color: var(--text-light);">
-                {{ selectedDatesCount }} reflection(s) will be created
-              </p>
             </div>
 
             <button @click="saveConfiguration" class="btn btn-primary" style="margin-top: 20px;">
@@ -175,7 +177,8 @@ export default {
       showUserMenu: false,
       isLoadingConfig: false,
       previewDates: [],
-      deselectedDates: []
+      deselectedDates: [],
+      hasLoadedStructure: false
     }
   },
   computed: {
@@ -188,8 +191,11 @@ export default {
   },
   watch: {
     'config.framework'(newFramework, oldFramework) {
-      // Only auto-populate if framework changed and not during initial load
-      if (!this.isLoadingConfig && newFramework !== oldFramework) {
+      // Only auto-populate if:
+      // 1. Not during initial load
+      // 2. Framework actually changed
+      // 3. No saved structure exists (hasLoadedStructure is false)
+      if (!this.isLoadingConfig && newFramework !== oldFramework && !this.hasLoadedStructure) {
         this.populatePredefinedStructure(newFramework)
       }
     }
@@ -207,13 +213,25 @@ export default {
         if (course.reflection_due_days) this.config.reflection_due_days = course.reflection_due_days.toString()
         if (course.recurrence_days) this.config.recurrence_days = course.recurrence_days.toString()
         if (course.selected_days) this.config.selected_days = course.selected_days.split(',')
+        
+        // Load saved custom structure if exists
         if (course.custom_structure) {
           try {
-            this.customItems = JSON.parse(course.custom_structure)
+            const parsed = JSON.parse(course.custom_structure)
+            if (parsed && parsed.length > 0) {
+              this.customItems = parsed
+              this.hasLoadedStructure = true // Mark that we loaded a saved structure
+            }
           } catch (e) {
             this.customItems = []
           }
+        } else {
+          // No saved structure, auto-populate based on framework
+          if (course.framework) {
+            this.populatePredefinedStructure(course.framework)
+          }
         }
+        
         this.isLoadingConfig = false
       } catch (error) {
         console.error('Error loading configuration:', error)

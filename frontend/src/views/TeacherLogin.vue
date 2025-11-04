@@ -5,10 +5,10 @@
         <router-link to="/" class="navbar-title">RJMS</router-link>
         <div class="navbar-menu">
           <div class="dropdown">
-            <button @click="toggleMenu" class="user-icon">☰</button>
+            <button @click="toggleMenu" class="btn btn-primary">Login</button>
             <div v-if="showMenu" class="dropdown-menu">
-              <router-link to="/login/teacher">Teacher Login</router-link>
-              <router-link to="/login/student">Student Login</router-link>
+              <router-link to="/login/student">Student</router-link>
+              <router-link to="/login/teacher">Teacher</router-link>
               <router-link to="/">Home</router-link>
             </div>
           </div>
