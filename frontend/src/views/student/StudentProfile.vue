@@ -7,10 +7,10 @@
           <router-link to="/student/dashboard">Dashboard</router-link>
           
           <div class="dropdown">
-            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
+            <button @click="toggleUserMenu">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/student/profile">Profile</router-link>
-              <button @click="logout" class="btn">Sign Out</button>
+              <button @click="logout">Sign Out</button>
             </div>
           </div>
         </div>

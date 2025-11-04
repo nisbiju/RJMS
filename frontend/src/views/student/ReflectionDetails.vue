@@ -7,10 +7,10 @@
           <router-link to="/student/dashboard">Dashboard</router-link>
           
           <div class="dropdown">
-            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
+            <button @click="toggleUserMenu">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/student/profile">Profile</router-link>
-              <button @click="logout" class="btn">Sign Out</button>
+              <button @click="logout">Sign Out</button>
             </div>
           </div>
         </div>
@@ -18,6 +18,10 @@
     </nav>
 
     <div class="container" style="padding: 40px 20px;">
+      <button @click="goBack" class="btn btn-secondary" style="margin-bottom: 20px;">
+        ← Back to Reflections
+      </button>
+      
       <h1 style="text-align: center; margin-bottom: 40px;">Reflection Details</h1>
 
       <div style="max-width: 800px; margin: 0 auto;">
@@ -69,7 +73,13 @@
             {{ submitButtonText }}
           </button>
 
-          <div v-if="isSubmitted" style="margin-top: 10px;">
+          <div v-if="isBeforeStartDate" style="margin-top: 10px;">
+            <p style="color: var(--text-light); font-size: 14px;">
+              Reflection opens on {{ formatDate(reflection.start_date) }}
+            </p>
+          </div>
+
+          <div v-else-if="isSubmitted" style="margin-top: 10px;">
             <p style="color: #4CAF50; font-weight: 500;">
               ✓ Submitted on {{ formatDate(submission.submitted_at) }}
             </p>
@@ -117,12 +127,22 @@ export default {
       const now = new Date()
       return now > dueDate
     },
+    isBeforeStartDate() {
+      if (!this.reflection.start_date) return false
+      const startDate = new Date(this.reflection.start_date)
+      const now = new Date()
+      return now < startDate
+    },
     isReadOnly() {
-      // Make read-only if due date has passed, regardless of submission status
-      return this.isDueDatePassed
+      // Make read-only if:
+      // 1. Current date is before start date, OR
+      // 2. Due date has passed
+      return this.isBeforeStartDate || this.isDueDatePassed
     },
     submitButtonText() {
-      if (this.isDueDatePassed) {
+      if (this.isBeforeStartDate) {
+        return 'Submission Not Yet Open'
+      } else if (this.isDueDatePassed) {
         return 'Submission Closed (Due Date Passed)'
       } else if (this.isSubmitted) {
         return 'Update Submission'
@@ -244,6 +264,13 @@ export default {
         this.$router.push('/login/student')
       } catch (error) {
         console.error('Logout error:', error)
+      }
+    },
+    goBack() {
+      if (this.reflection.course_id) {
+        this.$router.push(`/student/course/${this.reflection.course_id}`)
+      } else {
+        this.$router.push('/student')
       }
     }
   },

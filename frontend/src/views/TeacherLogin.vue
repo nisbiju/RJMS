@@ -9,7 +9,6 @@
             <div v-if="showMenu" class="dropdown-menu">
               <router-link to="/login/student">Student</router-link>
               <router-link to="/login/teacher">Teacher</router-link>
-              <router-link to="/">Home</router-link>
             </div>
           </div>
         </div>

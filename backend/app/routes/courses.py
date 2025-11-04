@@ -57,9 +57,9 @@ def generate_reflections_for_course(course):
                 # Create reflection
                 reflection = Reflection(
                     course_id=course.id,
-                    name=f"Reflection {reflection_number}",
+                    name=f"Reflection {current_date.strftime('%d/%m')}",
                     number=reflection_number,
-                    description=f"Reflection journal entry for week {reflection_number}",
+                    description=f"",
                     start_date=current_date,
                     due_date=due_date,
                     structure=structure
@@ -79,9 +79,9 @@ def generate_reflections_for_course(course):
             # Create reflection
             reflection = Reflection(
                 course_id=course.id,
-                name=f"Reflection {reflection_number}",
+                name=f"Reflection {current_date.strftime('%d/%m')}",
                 number=reflection_number,
-                description=f"Reflection journal entry for week {reflection_number}",
+                description=f"",
                 start_date=current_date,
                 due_date=due_date,
                 structure=structure

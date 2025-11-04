@@ -5,10 +5,10 @@
         <router-link to="/teacher" class="navbar-title">RJMS</router-link>
         <div class="navbar-menu">
           <div class="dropdown">
-            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
+            <button @click="toggleUserMenu">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/teacher/profile">Profile</router-link>
-              <button @click="logout" class="btn">Sign Out</button>
+              <button @click="logout">Sign Out</button>
             </div>
           </div>
         </div>
@@ -102,13 +102,24 @@
                 Generate Preview
               </button>
 
-              <div v-if="previewDates.length > 0" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 10px; background-color: var(--container);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
-                  <label v-for="(date, index) in previewDates" :key="index" style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
-                    <input type="checkbox" :checked="!deselectedDates.includes(date.dateStr)" @change="toggleDateSelection(date.dateStr)" />
-                    <span>{{ date.dateStr }}</span>
-                  </label>
-                </div>
+              <div v-if="previewDates.length > 0" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background-color: #FAFAFA;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tbody>
+                    <tr v-for="(date, index) in previewDates" :key="index" style="border-bottom: 1px solid #E0E0E0;">
+                      <td style="padding: 12px 16px; font-size: 14px;">
+                        {{ date.displayText }}
+                      </td>
+                      <td style="padding: 12px 16px; text-align: right; width: 60px;">
+                        <input 
+                          type="checkbox" 
+                          :checked="!deselectedDates.includes(date.dateStr)" 
+                          @change="toggleDateSelection(date.dateStr)"
+                          style="cursor: pointer; width: 18px; height: 18px;"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               
               <p v-if="previewDates.length > 0" style="margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--text-dark);">
@@ -117,9 +128,9 @@
             </div>
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
-              <h3 style="margin-bottom: 15px;">Custom Reflection Structure</h3>
+              <h3 style="margin-bottom: 15px;">Reflection Structure</h3>
               <p style="color: var(--text-light); font-size: 14px; margin-bottom: 15px;">
-                Add custom fields to structure your reflection journal
+                Structure your reflection journal here
               </p>
 
               <div v-for="(item, index) in customItems" :key="index" class="card" style="margin-bottom: 15px; padding: 15px;">
@@ -137,7 +148,7 @@
               </div>
 
               <button @click="addCustomItem" class="btn btn-secondary">
-                + Add Item
+                Add Field
               </button>
             </div>
 
@@ -316,6 +327,11 @@ export default {
         'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thurs': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0
       }
       
+      const dayNames = {
+        0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 
+        4: 'Thursday', 5: 'Friday', 6: 'Saturday'
+      }
+      
       const selectedDayNumbers = this.config.selected_days.map(d => dayMap[d])
       const startDate = new Date(this.config.start_date)
       const endDate = new Date(this.config.end_date)
@@ -326,8 +342,11 @@ export default {
       while (currentDate <= endDate) {
         if (selectedDayNumbers.includes(currentDate.getDay())) {
           const dateStr = currentDate.toISOString().split('T')[0]
-          const dayName = Object.keys(dayMap).find(key => dayMap[key] === currentDate.getDay())
-          const displayText = `${dateStr} (${dayName})`
+          const day = String(currentDate.getDate()).padStart(2, '0')
+          const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+          const year = currentDate.getFullYear()
+          const weekday = dayNames[currentDate.getDay()]
+          const displayText = `${day}-${month}-${year} [${weekday}]`
           dates.push({ dateStr, displayText })
         }
         currentDate.setDate(currentDate.getDate() + 1)

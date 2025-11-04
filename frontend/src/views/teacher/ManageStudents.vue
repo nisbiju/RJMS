@@ -5,10 +5,10 @@
         <router-link to="/teacher" class="navbar-title">RJMS</router-link>
         <div class="navbar-menu">
           <div class="dropdown">
-            <button @click="toggleUserMenu" class="btn btn-secondary">👤</button>
+            <button @click="toggleUserMenu">👤</button>
             <div v-if="showUserMenu" class="dropdown-menu">
               <router-link to="/teacher/profile">Profile</router-link>
-              <button @click="logout" class="btn">Sign Out</button>
+              <button @click="logout">Sign Out</button>
             </div>
           </div>
         </div>
@@ -51,7 +51,7 @@
               <input type="file" ref="fileInput" @change="handleFileUpload" accept=".csv,.xlsx,.xls,text/csv" style="display: none;" />
             </label>
             <a href="/api/students/sample-format" download style="text-decoration: none;">
-              <button class="btn btn-secondary" style="padding: 8px 12px;" title="Download Sample Format">
+              <button class="btn btn-secondary" title="Download Sample Format">
                 📄 Sample
               </button>
             </a>
