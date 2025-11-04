@@ -20,22 +20,27 @@ def google_auth():
         # Verify the Google token
         google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
         
-        # In development, we'll skip actual Google verification
-        # In production, uncomment the following:
-        # idinfo = id_token.verify_oauth2_token(token, requests.Request(), google_client_id)
+        # Ensure GOOGLE_CLIENT_ID is configured
+        if not google_client_id:
+            print('CRITICAL: GOOGLE_CLIENT_ID environment variable is not set')
+            return jsonify({'error': 'Authentication service is not configured'}), 500
         
-        # For development/demo purposes, we'll mock the response
-        # Replace this with actual Google verification in production
-        idinfo = {
-            'sub': token,  # Using token as unique ID for demo
-            'email': data.get('email', 'demo@example.com'),
-            'name': data.get('name', 'Demo User'),
-            'picture': data.get('picture', '')
-        }
+        # Verify the token with Google
+        try:
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), google_client_id)
+            
+            # Explicitly verify the audience (client ID)
+            if idinfo.get('aud') != google_client_id:
+                print(f'Token audience mismatch: expected {google_client_id}, got {idinfo.get("aud")}')
+                return jsonify({'error': 'Invalid token audience'}), 401
+                
+        except ValueError as e:
+            print(f'Token verification failed: {str(e)}')
+            return jsonify({'error': 'Invalid token'}), 401
         
         google_id = idinfo['sub']
         email = idinfo['email']
-        name = idinfo['name']
+        name = idinfo.get('name', email.split('@')[0])
         picture = idinfo.get('picture', '')
         
         # Check if user exists by email (for demo mode compatibility)
