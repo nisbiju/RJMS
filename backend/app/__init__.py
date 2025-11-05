@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from .models.models import db
 from dotenv import load_dotenv
@@ -39,10 +39,11 @@ def create_app():
         app,
         supports_credentials=True,
         origins=[
-            'http://localhost:5000',
-            'http://127.0.0.1:5000',
-            'http://localhost:5173',       # Vite default
-            'http://127.0.0.1:5173',
+            
+	    'http://localhost:5001',      
+            'http://127.0.0.1:5001',
+            'http://localhost:8080',       # Vite default
+            'http://127.0.0.1:8080',
             'https://*.replit.app',
             'https://*.replit.dev',
         ],
@@ -54,10 +55,10 @@ def create_app():
     # Init DB
     db.init_app(app)
 
-    # Health route
-    @app.route('/')
-    def index():
-        return {'status': 'ok', 'message': 'RJMS API is running'}
+    # Health Check Route
+    @app.route('/api/health')
+    def health():
+        return {'status': 'ok', 'message': 'RJMS API and Frontend running'}
 
     # Blueprints
     from .routes import auth, courses, students, teacher, reflections
@@ -70,5 +71,20 @@ def create_app():
     # Create tables
     with app.app_context():
         db.create_all()
+
+    # ----- Serve Built Vue Frontend -----
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_vue(path):
+        
+        static_folder = os.path.join(app.root_path, '../static')
+        file_path = os.path.join(static_folder, path)
+
+        if path != "" and os.path.exists(file_path):
+            return send_from_directory(static_folder, path)
+        else:
+            # ---- Fallback to index.html for Vue Router paths ----
+            return send_from_directory(static_folder, 'index.html')
+
 
     return app
