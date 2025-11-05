@@ -53,7 +53,7 @@ Student's Reflection:
 Please provide your feedback addressing each question/label separately, highlighting what the student did well and suggesting areas for improvement and deeper exploration."""
 
         # Call Gemini API
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel('gemini-2.5-flash-exp')
         response = model.generate_content(prompt)
         
         if response and response.text:
