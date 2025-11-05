@@ -4,6 +4,7 @@
     <nav class="navbar">
       <div class="container navbar-content">
         <router-link to="/" class="navbar-title">RJMS</router-link>
+	<!--
         <div class="navbar-menu">
           <div class="dropdown">
             <button @click="toggleMenu" class="btn btn-primary">Login</button>
@@ -13,6 +14,8 @@
             </div>
           </div>
         </div>
+	-->
+   
       </div>
     </nav>
 
