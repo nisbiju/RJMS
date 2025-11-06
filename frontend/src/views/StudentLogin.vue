@@ -3,19 +3,7 @@
     <!-- Top Navigation Bar -->
     <nav class="navbar">
       <div class="container navbar-content">
-        <router-link to="/" class="navbar-title">RJMS</router-link>
-	<!--
-        <div class="navbar-menu">
-          <div class="dropdown">
-            <button @click="toggleMenu" class="btn btn-primary">Login</button>
-            <div v-if="showMenu" class="dropdown-menu">
-              <router-link to="/login/student">Student</router-link>
-              <router-link to="/login/teacher">Teacher</router-link>
-            </div>
-          </div>
-        </div>
-	-->
-   
+        <router-link to="/" class="navbar-title">RJMS</router-link>   
       </div>
     </nav>
 
